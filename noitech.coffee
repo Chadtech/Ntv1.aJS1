@@ -216,3 +216,58 @@ module.exports =
     filesData = header.concat(channelAudio)
     outputFile = new Buffer(filesData)
     fs.writeFile fileName, outputFile
+
+  open: (fileName) ->
+    data = []
+    rawFile = fs.readFileSync(fileName)
+    datumIndex = 0
+    while datumIndex < rawFile.length
+      #console.log rawFile.readUInt(datumIndex)
+      data.push rawFile.readUInt8(datumIndex)
+      datumIndex++
+
+    numberOfChannels = data[20]
+    unsortedAudioData = []
+
+    sampleIndex = 44
+    while sampleIndex < data.length
+      if sampleIndex % 2 is 0
+        if rawFile[sampleIndex + 1] >= 128
+          datum = data[sampleIndex + 1] * 256
+          datum += data[sampleIndex]
+          datum = 65536 - datum
+          datum *= -1
+          unsortedAudioData.push datum
+        else
+          datum = data[sampleIndex + 1] * 256
+          datum += data[sampleIndex]
+          unsortedAudioData.push datum
+      sampleIndex++
+
+    channels = []
+    channelIndex = 0
+    while channelIndex < numberOfChannels
+      channels.push []
+
+      sampleIndex = 0
+      while sampleIndex < unsortedAudioData.length /numberOfChannels
+        sample = (unsortedAudioData[sampleIndex] * numberOfChannels)
+        channels[channels.length - 1].push sample
+        sampleIndex++
+      channelIndex++
+
+    return channels
+
+
+
+
+
+
+
+
+
+
+
+
+
+
