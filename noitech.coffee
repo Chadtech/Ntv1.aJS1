@@ -281,7 +281,30 @@ module.exports =
 
     return output
 
+  join: (input0, input1) ->
+    output = []
 
+    for sample in input0
+      output.push sample
+
+    for sample in input1
+      output.push sample
+
+    return output
+
+  split: (input, at) ->
+    output0 = []
+    output1 = []
+
+    sampleIndex = 0
+    while sampleIndex < at
+      output0.push input[sampleIndex]
+      sampleIndex++
+    while sampleIndex < input.length
+      output1.push input[sampleIndex]
+      sampleIndex++
+
+    return [output0, output1]
 
 
 

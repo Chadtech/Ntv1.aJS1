@@ -533,7 +533,59 @@ module.exports =
 
 
 
-  #glissando: (input, )
+  glissando: (input, effect) ->
+    output = []
+    factor = effect.factor or 1
+    grainLength = effect.grainLength
+    passes = effect.passes
+    grainRate = grainLength / passes
+    grains = []
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      startingSample = sampleIndex // 1
+      decimalOfSample = sampleIndex % 1
+      thisGrainLength = 0
+      
+      if (input.length - sampleIndex) > grainLength
+        thisGrainLength = grainLength
+      else
+        thisGrainLength = input.length - sampleIndex
+
+      grainEnd = sampleIndex + thisGrainLength
+      thisGrain = input.slice(sampleIndex, grainEnd)
+      grains.push @shift(thisGrain, decimalOfSample)
+
+      sampleIndex += grainRate
+
+    factorIncrement = (factor - 1) / grains.length
+
+    grainIndex = 0
+    while grainIndex < grains.length
+      thisGrainsFactor = factor: ((factorIncrement * grainIndex) + 1).toFixed(2)
+      grains[grainIndex] = @speed grains[grainIndex], thisGrainsFactor
+      grains[grainIndex] = @fadeIn(@fadeOut(grains[grainIndex]))
+      grainIndex++
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      output.push 0
+      sampleIndex++
+
+    intervalIndex = 0
+    grainIndex = 0
+    while grainIndex < grains.length
+      sampleIndex = 0
+      while sampleIndex < grains[grainIndex].length
+        intervalIndex = grainIndex
+        intervalIndex *= grainRate
+        intervalIndex = intervalIndex // 1
+        intervalIndex += sampleIndex
+        output[intervalIndex] += grains[grainIndex][sampleIndex]
+        sampleIndex++
+      grainIndex++
+
+    return output
 
 
 
