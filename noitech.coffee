@@ -220,13 +220,13 @@ module.exports =
   open: (fileName) ->
     data = []
     rawFile = fs.readFileSync(fileName)
+
     datumIndex = 0
     while datumIndex < rawFile.length
-      #console.log rawFile.readUInt(datumIndex)
       data.push rawFile.readUInt8(datumIndex)
       datumIndex++
 
-    numberOfChannels = data[20]
+    numberOfChannels = data[22]
     unsortedAudioData = []
 
     sampleIndex = 44
@@ -248,19 +248,38 @@ module.exports =
     channelIndex = 0
     while channelIndex < numberOfChannels
       channels.push []
-
       sampleIndex = 0
-      while sampleIndex < unsortedAudioData.length /numberOfChannels
-        sample = (unsortedAudioData[sampleIndex] * numberOfChannels)
+      while sampleIndex < (unsortedAudioData.length / numberOfChannels)
+        sample = sampleIndex * numberOfChannels
+        sample += channelIndex
+        sample = unsortedAudioData[sample]
         channels[channels.length - 1].push sample
         sampleIndex++
       channelIndex++
 
     return channels
 
+  mix: (input0, input1, place) ->
+    output = []
+    whereAt = place or 0
 
+    sampleIndex = 0
+    while sampleIndex < input1.length
+      output.push input1[sampleIndex]
+      sampleIndex++
 
+    if (whereAt + input0.length) > input1.length
+      padding = 0
+      while padding < ((whereAt + input0.length) - input1.length)
+        output.push 0
+        padding++
 
+    sampleIndex = 0
+    while sampleIndex < input0.length
+      output[whereAt + sampleIndex] += input0[sampleIndex]
+      sampleIndex++
+
+    return output
 
 
 

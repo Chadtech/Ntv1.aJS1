@@ -13,6 +13,27 @@ module.exports =
 
     return output
 
+  shift: (input, effect) ->
+    output = []
+
+    if (effect.shift is 0) or (effect.shift is undefined)
+      return input
+
+    if effect.shift > 0
+      input = [0].concat input
+    else
+      input = input.concat [0]
+
+    shiftMagnitude = Math.abs(effect.shift)
+    sampleIndex = 0
+    while sampleIndex < input.length
+      sample = input[sampleIndex] * (1 - shiftMagnitude) 
+      sample += input[sampleIndex] * shiftMag
+      output.push sample
+      sampleIndex++
+
+    return output
+
   padBefore: (input, effect) ->
     paddingAmount = effect.paddingAmount or 30
     output = []
@@ -36,23 +57,6 @@ module.exports =
 
     output = input.concat output
     return output
-
-  ###
-  crush: (input, effect) ->
-    output = []
-
-    sampleIndex = 0
-    while sampleIndex < input.length
-      output.push 0
-      sampleIndex++
-    sampleIndex = 0
-    while sampleIndex < input.length
-      factor = Math.abs(input[sampleIndex] / 32767)
-      output[sampleIndex] = input[sampleIndex] * factor
-      sampleIndex++
-
-    return output
-    ###
 
   delay: (input, effect) ->
     output = []
@@ -114,6 +118,7 @@ module.exports =
     return output
 
   fadeOut: (input, effect) ->
+    effect = effect or {}
     whereBegin = effect.beginAt or 0
     whereEnd = effect.endAt or (input.length - 1)
     finalVolume = effect.volumeAtEnd or 0
@@ -132,7 +137,7 @@ module.exports =
       output.push Math.round(fadedSample)
       sampleIndex++
 
-    remainderAfterFade = input.length - whereEnd -1
+    remainderAfterFade = input.length - whereEnd - 1
     while sampleIndex < remainderAfterFade
       output.push Math.round(input[sampleIndex] * finalVolume)
       sampleIndex++
@@ -140,8 +145,9 @@ module.exports =
     return output
 
   fadeIn: (input, effect) ->
+    effect = effect or {}
     whereBegin = effect.beginAt or 0
-    whereEnd = effect.endAt or 0
+    whereEnd = effect.endAt or input.length - 1
     startVolume = effect.volumeAtStart or 0
     rateOfIncrease = (1 - startVolume) / (whereEnd - whereBegin)
 
@@ -166,14 +172,16 @@ module.exports =
     return output
 
   rampOut: (input, effect) ->
+    effect = effect or {}
     ramp = effect.rampLength or 30
 
     rampParameters =
-      beginAt: input.length - rampLength
+      beginAt: input.length - ramp
 
     return @fadeOut(input, rampParameters)
 
   rampIn: (input, effect) ->
+    effect = effect or {}
     ramp = effect.rampLength or 30
 
     rampParameters =
@@ -322,4 +330,194 @@ module.exports =
       sampleIndex++
 
     return output
+
+  factorize: (fraction) ->
+    numeratorsFactors = []
+    denominatorsFactors = []
+
+    isInteger = (number) ->
+      if number % 1 is 0
+        return true
+      else
+        return false
+
+    denominatorCandidate = 1
+    while not isInteger(fraction * denominatorCandidate)
+      denominatorCandidate++
+
+    denominator = denominatorCandidate
+    numerator = fraction * denominator
+
+    factoringCandidate = 2
+    while factoringCandidate <= denominator
+      if isInteger(denominator / factoringCandidate)
+        denominator /= factoringCandidate
+        denominatorsFactors.push factoringCandidate
+      else
+        factoringCandidate++
+
+    factoringCandidate = 2
+    while factoringCandidate <= numerator
+      if isInteger(numerator / factoringCandidate)
+        numerator /= factoringCandidate
+        numeratorsFactors.push factoringCandidate
+      else
+        factoringCandidate++
+
+    return [numeratorsFactors, denominatorsFactors]
+
+  speed: (input, effect) ->
+    output = []
+    factors = @factorize effect.factor
+
+    multiplySpeed = (sound, factorIncrease) ->
+      spedUpSound = []
+      interval = 0
+
+      while interval < (input.length // factorIncrease)
+        averageValue = 0
+        sampleIndex = 0
+        while sampleIndex < factorIncrease
+          intervalIndex = sampleIndex + (interval * factorIncrease)
+          averageValue += sound[intervalIndex]
+          sampleIndex++
+        averageValue /= factorIncrease
+
+        spedUpSound.push averageValue
+        interval++
+
+      if (sound.length / factorIncrease) % 1 isnt 0
+        amountOfEndSamples = (sound.length // factorIncrease)
+        amountOfEndSamples *= factorIncrease
+        amountOfEndSamples = input.length - amountOfEndSamples
+        unless amountOfEndSamples < (factorIncrease / 2)
+          averageValue = 0
+          sampleIndex = 0
+
+          while sampleIndex < amountOfEndSamples
+            averageValue += sound[sound.length - 1 - sampleIndex]
+            sampleIndex++
+
+          averageValue /= amountOfEndSamples
+          spedUpSound.push averageValue
+
+      return spedUpSound
+ 
+    divideSpeed = (sound, factorDecrease) ->
+      slowedDownSound = []
+
+      sampleIndex = 0
+      while sampleIndex < (sound.length - 1)
+        amplitudeDifference = sound[sampleIndex + 1]
+        amplitudeDifference -= sound[sampleIndex]
+
+        differenceAcrossDistance = amplitudeDifference
+        differenceAcrossDistance /= factorDecrease
+
+        intervalIndex = 0
+        while intervalIndex < factorDecrease
+          sample = sound[sampleIndex]
+          sample += Math.round(intervalIndex * differenceAcrossDistance)
+          slowedDownSound.push sample
+          intervalIndex++
+        sampleIndex++
+
+      unAverageableEndBitIndex = 1
+      while unAverageableEndBitIndex < factorDecrease
+        slowedDownSound.push sound[sound.length - 1]
+        unAverageableEndBitIndex++
+
+      return slowedDownSound
+
+    decreaseIndex = 0
+    while decreaseIndex < factors[1].length
+      input = divideSpeed(input, factors[1][decreaseIndex])
+      decreaseIndex++
+
+    increaseIndex = 0
+    while increaseIndex < factors[0].length
+      input = multiplySpeed(input, factors[0][increaseIndex])
+      increaseIndex++
+
+    output = input
+    return output
+
+  grain: (input, effect) ->
+    output = []
+    factor = effect.factor or 1
+    grainLength = effect.grainLength
+    passes = effect.passes
+    grainRate = grainLength / passes
+    grains = []
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      startingSample = sampleIndex // 1
+      decimalOfSample = sampleIndex % 1
+      thisGrainLength = 0
+      
+      if (input.length - sampleIndex) > grainLength
+        thisGrainLength = grainLength
+      else
+        thisGrainLength = input.length - sampleIndex
+
+      grainEnd = sampleIndex + thisGrainLength
+      thisGrain = input.slice(sampleIndex, grainEnd)
+      #console.log 'A', @shift(thisGrain, decimalOfSample).length
+      grains.push @shift(thisGrain, decimalOfSample)
+
+      sampleIndex += grainRate
+
+    console.log 'SAMPLE INDEX AFTER GRAIN FILL', sampleIndex
+
+    grainIndex = 0
+    while grainIndex < grains.length
+      grains[grainIndex] = @speed grains[grainIndex], factor: factor
+      if grains[grainIndex].length > 30
+        grains[grainIndex] = @ramp(grains[grainIndex])
+      else
+        grains[grainIndex] = @fadeIn(@fadeOut(grains[grainIndex]))
+      #console.log grains
+      grainIndex++
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      output.push 0
+      sampleIndex++
+
+    console.log 'GRAIN RATE', grainRate
+
+    intervalIndex = 0
+    grainIndex = 0
+    while grainIndex < grains.length
+      sampleIndex = 0
+      while sampleIndex < grains[grainIndex].length
+        intervalIndex = grainIndex // 2
+        intervalIndex *= grainRate
+        intervalIndex += sampleIndex
+        #console.log 'SAMPLE OF GRAIN AT ', grains[grainIndex][sampleIndex]
+        output[intervalIndex] += grains[grainIndex][sampleIndex]
+        sampleIndex++
+      grainIndex++
+
+    console.log 'INPUT LENGTH', input.length, 'interval Index', intervalIndex
+    return output
+
+  #glissando: (input, )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
