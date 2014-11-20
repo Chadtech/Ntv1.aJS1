@@ -160,7 +160,7 @@ module.exports =
 
     durationOfFade = whereEnd - whereBegin
     while sampleIndex < durationOfFade
-      increase = 1 - ((durationOfFade - sampleIndex) * rateOfIncrease)
+      increase = ((durationOfFade - sampleIndex) * rateOfIncrease)
       output.push Math.round(input[sampleIndex] * (1 - increase))
       sampleIndex++
 
@@ -173,7 +173,7 @@ module.exports =
 
   rampOut: (input, effect) ->
     effect = effect or {}
-    ramp = effect.rampLength or 30
+    ramp = effect.rampLength or 60
 
     rampParameters =
       beginAt: input.length - ramp
@@ -182,7 +182,7 @@ module.exports =
 
   rampIn: (input, effect) ->
     effect = effect or {}
-    ramp = effect.rampLength or 30
+    ramp = effect.rampLength or 60
 
     rampParameters =
       endAt: ramp
@@ -463,21 +463,14 @@ module.exports =
 
       grainEnd = sampleIndex + thisGrainLength
       thisGrain = input.slice(sampleIndex, grainEnd)
-      #console.log 'A', @shift(thisGrain, decimalOfSample).length
       grains.push @shift(thisGrain, decimalOfSample)
 
       sampleIndex += grainRate
 
-    console.log 'SAMPLE INDEX AFTER GRAIN FILL', sampleIndex
-
     grainIndex = 0
     while grainIndex < grains.length
       grains[grainIndex] = @speed grains[grainIndex], factor: factor
-      if grains[grainIndex].length > 30
-        grains[grainIndex] = @ramp(grains[grainIndex])
-      else
-        grains[grainIndex] = @fadeIn(@fadeOut(grains[grainIndex]))
-      #console.log grains
+      grains[grainIndex] = @fadeIn(@fadeOut(grains[grainIndex]))
       grainIndex++
 
     sampleIndex = 0
@@ -485,23 +478,60 @@ module.exports =
       output.push 0
       sampleIndex++
 
-    console.log 'GRAIN RATE', grainRate
-
     intervalIndex = 0
     grainIndex = 0
     while grainIndex < grains.length
       sampleIndex = 0
       while sampleIndex < grains[grainIndex].length
-        intervalIndex = grainIndex // 2
+        intervalIndex = grainIndex
         intervalIndex *= grainRate
+        intervalIndex = intervalIndex // 1
         intervalIndex += sampleIndex
-        #console.log 'SAMPLE OF GRAIN AT ', grains[grainIndex][sampleIndex]
         output[intervalIndex] += grains[grainIndex][sampleIndex]
         sampleIndex++
       grainIndex++
 
-    console.log 'INPUT LENGTH', input.length, 'interval Index', intervalIndex
     return output
+
+  superGrain: (input, effect) ->
+    effect = effect or {}
+    passes = effect.passes or 3
+    grainLength = effect.grainLength or 8048
+    iterations = effect.iterations or 10
+    factor = effect.factor or 1
+    breath = effect.breath or 0.5
+    renditions = []
+
+    iteration = 0
+    while iteration < iterations
+      thisGrainLength = (grainLength / iterations) 
+      thisGrainLength *= iteration
+      thisGrainLength += grainLength * breath
+      thisGrainLength = thisGrainLength // 1
+
+      effectOfThisIteration =
+        factor:      factor
+        grainLength: thisGrainLength
+        passes:      passes
+
+      renditions.push @grain(input, effectOfThisIteration)
+      iteration++
+
+    output = []
+    sampleIndex = 0
+    while sampleIndex < input.length
+      output.push 0
+      sampleIndex++
+
+    for rendition in renditions
+      sampleIndex = 0
+      while sampleIndex < rendition.length
+        output[sampleIndex] += rendition[sampleIndex] / iterations
+        sampleIndex++
+
+    return output
+
+
 
   #glissando: (input, )
 
