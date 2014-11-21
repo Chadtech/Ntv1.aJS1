@@ -724,6 +724,31 @@ module.exports =
 
     return output
 
+  hipass: (input, effect) ->
+    input0 = input
+    input1 = @invert(@lopass(input, effect))
+    
+    output = []
+    whereAt = place or 0
+
+    sampleIndex = 0
+    while sampleIndex < input1.length
+      output.push input1[sampleIndex]
+      sampleIndex++
+
+    if (whereAt + input0.length) > input1.length
+      padding = 0
+      while padding < ((whereAt + input0.length) - input1.length)
+        output.push 0
+        padding++
+
+    sampleIndex = 0
+    while sampleIndex < input0.length
+      output[whereAt + sampleIndex] += input0[sampleIndex]
+      sampleIndex++
+
+    return output
+
 
 
 
