@@ -308,7 +308,8 @@ module.exports =
     backPass = reverbBackPass(input, decay0, delays0)
     return reverbForwardPass(backPass, decayON, delaysON)
 
-  convole: (input, effect) ->
+  convolve: (input, effect) ->
+    effect = effect or {}
     factor = effect.factor or 0.05
     seed = effect.seed
     output = []
@@ -586,6 +587,143 @@ module.exports =
       grainIndex++
 
     return output
+
+  lopass: (input, effect) ->
+    effect = effect or {}
+    depth = effect.depth or 1.5
+    mix = effect.mix or 1
+    wing = effect.wing or 25
+
+    expandedInput = []
+    output = []
+
+    time = 0
+    while time < wing
+      expandedInput.push input[0]
+      time++
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      expandedInput.push input[sampleIndex]
+      sampleIndex++
+
+    time = 0
+    while time < wing
+      expandedInput.push input[input.length - 1]
+      time++
+
+    divisor = depth ** wing
+    summation = 0
+    leftWing = []
+
+    wingIndex = 0
+    while wingIndex < wing
+      summation += depth ** wingIndex
+      leftWing.push depth ** wingIndex
+      wingIndex++
+
+    rightWing = leftWing.reverse()
+
+    #
+    #      2 ** wing
+    #         |
+    #         *          ---
+    #         *           |
+    #         *           |
+    # L. Wing * R. wing   |
+    #     |   *  |        |
+    #   |----|*|----|     |
+    #         *           |
+    #         *           |
+    #        ***          | Greatest Depth
+    #        ***          | 2 ** wing length
+    #        ***          |
+    #        ***          |
+    #       *****         |
+    #       *****         |
+    #      *******        |
+    #     *********      ---
+    #  |--------------|
+    #    Factor Range ( FR )
+
+    #
+    #      input = [ a, b, d, e, f, g, h, i, j, k, l, m, n, o, p ... ]
+    #                |  |  |  |  |  |  |
+    #                |  |  |  |  |  |  |
+    #                |  |  |  |  |  |  |
+    #                |  |     |  |  |  |
+    #                |  |  d  |  |  |  |
+    #                |  |     |  |  |  |
+    #                |  |  *  |  |  |  |
+    #                |  |  *  |  |  |  |
+    #                |  |  *  |  |  |  |
+    #                |  |  *  |  |  |  |
+    #                |  |  *  |  |  |  |
+    #                |     *     |  |  |
+    #          ------|  b  *  e  |  |  |
+    #          |  |  |     *     |  |  |
+    #          |  |  |  *  *  *  |  |  |
+    #          |  |     *  *  *     |  |
+    #          |     a  *  *  *  f     |
+    #             a     *  *  *     g
+    #          a     *  *  *  *  *     h
+    #                *  *  *  *  *   
+    #             *  *  *  *  *  *  * 
+    #          *  *  *  *  *  *  *  *  *
+    # Multiply by
+    #
+    # FR @   [ 1, 2, 4, 8, 16,8, 4, 2, 1 ]
+    #
+    # Add together
+    #           --|  |  |  |  |  |  |--
+    #              --|  |  |  |  |--
+    #                 --|  |  |--
+    #                    --|--
+    #                      |
+    #
+    # Divide      / sum(depth at wingSpot) 
+    #            /  for wingSpot 
+    #           /   from 0 to (wing length * 2 + 1) 
+    #
+    #                      |
+    #                      |
+    #
+    #     output = [ a, b, d, e, f, g, h, i, j, k, l, m, n, o, p ... ]
+    #
+
+    factorRange = leftWing.concat [(2 ** wing)]
+    factorRange = factorRange.concat rightWing 
+
+    summation *= 2
+    divisor += summation
+
+    if depth < 2
+      divisor = factorRange.length
+      factorIndex = 0
+      while factorIndex < factorRange.length
+        factorRange[factorIndex] = 1
+        factorIndex++
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      value = 0
+      factorIndex = 0
+      while factorIndex < factorRange.length
+        thisContributionToValue = factorRange[factorIndex]
+        thisContributionToValue *= expandedInput[sampleIndex + factorIndex]
+        value -= thisContributionToValue
+        output[sampleIndex] = Math.round(value / divisor)
+        factorIndex++
+      sampleIndex++
+
+    sampleIndex = 0
+    while sampleIndex < input.length
+      output[sampleIndex] = output[sampleIndex] * mix
+      output[sampleIndex] += input[sampleIndex] * (1 - mix)
+      sampleIndex++
+
+    return output
+
 
 
 
