@@ -18,18 +18,19 @@ module.exports =
 
   loadPieceProperties: (piecePropertiesFileName) ->
     pieceProperties =
-      beatLength: 0
-      barLength:  24
-      length:     12039300 # 4 minutes and 33 seconds
-      voices:     []
-      scale:      []
-      tonic:      25
+      'beat duration': 0
+      'bar length':  24
+      'length':     12039300 # 4 minutes and 33 seconds
+      'voices':     []
+      'scale':      []
+      'tonic':      25
 
     piecePropertiesAsString = 
       fs.readFileSync(piecePropertiesFileName, 'utf8')
     propsCSV = Nu.stringToRows piecePropertiesAsString
 
     for row in propsCSV
+      console.log '9', row[0], typeof row[1]
       if pieceProperties[row[0]] isnt undefined
         switch typeof pieceProperties[row[0]]
           when 'number'
