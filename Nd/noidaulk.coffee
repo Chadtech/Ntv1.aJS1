@@ -1,4 +1,4 @@
-Nu = require './noidaulkUtility'
+Nu = require './Ndu/noidaulkUtility'
 fs = require 'fs'
 
 module.exports =
