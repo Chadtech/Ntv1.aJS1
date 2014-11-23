@@ -1,62 +1,129 @@
-Nu = require './Ndu/noidaulkUtility'
+Ndu = require './Ndu/noidaulkUtility'
 fs = require 'fs'
 
 module.exports =
-  loadScore: (scoreFileName) ->
-    scoreAsString = fs.readFileSync(scoreFileName, 'utf8')
-    scoreAsArrays = Nu.stringToRows scoreAsString
+  loadScoreDimension: (scoreName, dimensionName) ->
+    fileName = scoreName + ' - ' + dimensionName + '.csv'
+    scoreAsString = fs.readFileSync(fileName, 'utf8')
+    scoreAsArrays = Ndu.stringToRows scoreAsString
+    scoreAsArrays = Ndu.cleanRows scoreAsArrays
 
-    score = {}
+    dimension = {}
     for voice in scoreAsArrays
-      score[voice[0]] = []
+      dimension[voice[0]] = []
       noteIndex = 1
       while noteIndex < voice.length
-        score[voice[0]].push voice[noteIndex]
+        dimension[voice[0]].push voice[noteIndex]
         noteIndex++
 
-    return score
+    return dimension
 
-  loadPieceProperties: (piecePropertiesFileName) ->
-    pieceProperties =
-      'beat duration': 0
-      'bar length':  24
-      'length':     12039300 # 4 minutes and 33 seconds
-      'voices':     []
-      'scale':      []
-      'tonic':      25
+  loadTime: (projectName) ->
+    fileName = projectName + ' - time.csv'
+    timeAsString = fs.readFileSync(fileName, 'utf8')
+    timeAsArrays = Ndu.stringToRows timeAsString
+    timeAsArrays = Ndu.cleanRows timeAsArrays
 
-    piecePropertiesAsString = 
-      fs.readFileSync(piecePropertiesFileName, 'utf8')
-    propsCSV = Nu.stringToRows piecePropertiesAsString
+    time = {}
+    for row in timeAsArrays
+      time[row[0]] = []
+      cellIndex = 1
+      while cellIndex < row.length
+        if row[cellIndex] isnt ''
+          time[row[0]].push parseFloat(row[cellIndex])
+        else
+          time[row[0]].push row[cellIndex]
+        cellIndex++
 
-    for row in propsCSV
-      console.log '9', row[0], typeof row[1]
+    project = @loadProperties(projectName)
+
+    time['Dist'] = []
+    summationOfTime = 0
+    velocityIndex = 0
+    while velocityIndex < time['Vel'].length
+      time['Dist'].push summationOfTime
+      summationOfTime += time['Vel'][velocityIndex] * project['beat length']
+      velocityIndex++
+
+    time['duration'] = summationOfTime
+
+    return time
+
+  loadProperties: (projectName) ->
+    pieceArrayContentTypes =
+      'scale': 'numbers'
+      'dimensions': 'words'
+      'voices': 'words'
+
+    pieceProperties = 
+      'beat length': 22050
+      'scale': []
+      'tonic': 25
+      'length': 0
+      'dimensions': []
+      'voices': []
+
+    fileName = projectName + ' - properties.csv'
+    project = fs.readFileSync(fileName, 'utf8')
+
+    project = Ndu.stringToRows project
+    project = Ndu.cleanRows project
+
+    for row in project
       if pieceProperties[row[0]] isnt undefined
         switch typeof pieceProperties[row[0]]
           when 'number'
-            pieceProperties[row[0]] = row[1]
+            pieceProperties[row[0]] = parseInt(row[1])
           when 'object'
             if pieceProperties[row[0]] instanceof Array
               cellIndex = 1
               while cellIndex < row.length
-                pieceProperties[row[0]].push row[cellIndex]
+                switch pieceArrayContentTypes[row[0]]
+                  when 'numbers'
+                    if row[cellIndex] isnt ''
+                      pieceProperties[row[0]].push parseFloat(row[cellIndex])
+                  when 'words'
+                    if row[cellIndex] isnt ''
+                      pieceProperties[row[0]].push row[cellIndex]
                 cellIndex++
+      else
+        pieceProperties[row[0]] = row[1]
 
     return pieceProperties
 
-  loadTime: (timeFileName) ->
-    timeAsString = fs.readFileSync(timeFileName, 'utf8')
-    time = Nu.stringToRows timeAsString
+  getScore: (projectName) ->
+    project = @loadProperties(projectName)
 
-    return time
+    score = {}
+    for voice in project['voices']
+      score[voice] = {}
+      beatIndex = 0
+      while beatIndex < project['length']
+        score[voice][beatIndex.toString()] = {}
+        beatIndex++
 
-  getProject: (projectName) ->
-    project = 
-      score:      @loadScore projectName + ' - score.csv', 'utf8'
-      time:       @loadTime projectName + ' - time.csv', 'utf8'
-      properties: @loadPieceProperties projectName + ' - properties.csv', 'utf8'
+    for dimension in project['dimensions']
+      if dimension isnt ''
+        thisDimension = @loadScoreDimension projectName, dimension
+        for voice in project.voices
+          cellIndex = 0
+          while cellIndex < thisDimension[voice].length
+            if thisDimension[voice][cellIndex] isnt ''
+              # For this voice, at this time, the value
+              # of this dimension, of the voice's expression
+              score[voice][cellIndex.toString()][dimension] = thisDimension[voice][cellIndex]
+            cellIndex++
 
-    return project
+    return score
+
+  getPiece: (projectName) ->
+    piece =
+      props: @loadProperties projectName
+      score: @getScore projectName
+      time: @loadTime projectName
+
+    return piece
+
 
 
 

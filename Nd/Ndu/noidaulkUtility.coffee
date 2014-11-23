@@ -16,6 +16,9 @@ module.exports =
           cell = ''
         else
           cell += character
+          
+    thisRow.push cell
+    rows.push thisRow
 
     return rows
 
@@ -32,3 +35,11 @@ module.exports =
         cellIndex++
 
     return columns
+
+  cleanRows: (rows) ->
+    outputRows = []
+    for row in rows
+      if row[0] isnt 'EXCL'
+        outputRows.push row
+
+    return outputRows

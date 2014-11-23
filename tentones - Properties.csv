@@ -1,6 +1,6 @@
-beat duration,22050,,,,,,
-voices,generatee,generatee,,,,,
-scale,1.00000,1.12500,1.25000,1.33333,1.50000,1.66667,1.87500
-Tonic,25,,,,,,
-bar length,4,,,,,,
-length,551250,,,,,,
+beat length,22050,,,,,,
+scale,1.0000,1.1250,1.2500,1.3333,1.5000,1.6667,1.8750
+tonic,25,,,,,,
+length,15,,,,,,
+dimensions,tone,volume,sustain,,,,
+voices,voice0,voice1,,,,,
