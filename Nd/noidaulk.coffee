@@ -1,4 +1,6 @@
 Ndu = require './Ndu/noidaulkUtility'
+Nt = require './../Nt/noitech'
+gen = Nt.generate
 fs = require 'fs'
 
 module.exports =
@@ -125,5 +127,9 @@ module.exports =
       props: @loadProperties projectName
       score: @getScore projectName
       time: @loadTime projectName
+
+    time = piece.time
+
+    piece.performance = gen.silence length: time.duration
 
     return piece

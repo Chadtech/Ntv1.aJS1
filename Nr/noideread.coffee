@@ -2,6 +2,12 @@ Nt = require './../Nt/noitech'
 Nd = require './../Nd/Noidaulk'
 fs = require 'fs'
 
+zeroPadder = (number, numberOfZerosToFill) ->
+  numberAsString = number + ''
+  while numberAsString.length < numberOfZerosToFill
+    numberAsString = '0' + numberAsString
+  return numberAsString
+
 module.exports = 
 
   noteToFrequency: (note, piece) ->
@@ -22,7 +28,6 @@ module.exports =
     score = piece.score
     time = piece.time.dist
 
-    beatLength = piece.props['beat length']
     for voice in voices
       for note in score[voice.name]
         if note['tone'] isnt undefined
@@ -54,6 +59,54 @@ module.exports =
 
     return false
 
+  generateBits: (piece, voices, next) ->
+    performance = piece.performance
+    score = piece.score
+    time = piece.time.dist
+
+    for voice in voices
+      for note in score[voice.name]
+        if note['tone'] isnt undefined
+          note['tone'] = @noteToFrequency(note['tone'], piece)
+
+    for voice in voices
+      noteIndex = 0
+      while noteIndex < score[voice.name].length
+        if score[voice.name][noteIndex]['tone'] isnt undefined
+          thisSound = voice.generate score[voice.name][noteIndex]
+          fileName = 'bits/'
+          fileName += voice.name
+          fileName += zeroPadder(noteIndex, 10)
+          fileName += '.wav'
+          Nt.buildFile fileName, [thisSound]
+        noteIndex++
+
+    next(piece, voices)
+
+  assembleBits: (piece, voices) ->
+    performance = piece.performance
+    score = piece.score
+    time = piece.time.dist
+
+    for voice in voices
+      for note in score[voice.name]
+        if note['tone'] isnt undefined
+          note['tone'] = @noteToFrequency(note['tone'], piece)
+
+    for voice in voices
+      noteIndex = 0
+      while noteIndex < score[voice.name].length
+        if score[voice.name][noteIndex]['tone'] isnt undefined
+          fileName =  'bits/'
+          fileName += voice.name
+          fileName += zeroPadder(noteIndex, 10)
+          fileName += '.wav'
+          thisSound = Nt.open(fileName)
+          thisSound = thisSound[0]
+          performance = Nt.mix thisSound, performance, time[noteIndex]
+        noteIndex++
+
+    Nt.buildFile 'piece.wav', [performance]
 
   init: (projectName) ->
     fs.mkdir 'oldsh', (msg) ->
