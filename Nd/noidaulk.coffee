@@ -13,7 +13,10 @@ module.exports =
       dimension[voice[0]] = []
       noteIndex = 1
       while noteIndex < voice.length
-        dimension[voice[0]].push voice[noteIndex]
+        if not isNaN(parseFloat(voice[noteIndex]))
+          dimension[voice[0]].push parseFloat(voice[noteIndex])
+        else
+          dimension[voice[0]].push voice[noteIndex]
         noteIndex++
 
     return dimension
@@ -37,12 +40,12 @@ module.exports =
 
     project = @loadProperties(projectName)
 
-    time['Dist'] = []
+    time['dist'] = []
     summationOfTime = 0
     velocityIndex = 0
-    while velocityIndex < time['Vel'].length
-      time['Dist'].push summationOfTime
-      summationOfTime += time['Vel'][velocityIndex] * project['beat length']
+    while velocityIndex < time['vel'].length
+      time['dist'].push summationOfTime
+      summationOfTime += time['vel'][velocityIndex] * project['beat length']
       velocityIndex++
 
     time['duration'] = summationOfTime
@@ -96,10 +99,11 @@ module.exports =
 
     score = {}
     for voice in project['voices']
-      score[voice] = {}
+      score[voice] = []
       beatIndex = 0
       while beatIndex < project['length']
-        score[voice][beatIndex.toString()] = {}
+        thisVoice = score[voice]
+        thisVoice.push {}
         beatIndex++
 
     for dimension in project['dimensions']
@@ -111,7 +115,7 @@ module.exports =
             if thisDimension[voice][cellIndex] isnt ''
               # For this voice, at this time, the value
               # of this dimension, of the voice's expression
-              score[voice][cellIndex.toString()][dimension] = thisDimension[voice][cellIndex]
+              score[voice][cellIndex][dimension] = thisDimension[voice][cellIndex]
             cellIndex++
 
     return score
@@ -123,9 +127,3 @@ module.exports =
       time: @loadTime projectName
 
     return piece
-
-
-
-
-
-

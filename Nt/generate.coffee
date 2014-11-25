@@ -87,7 +87,7 @@ module.exports =
       sampleIndex++
 
     harmonic = 0
-    while harmonic < voice.harmoincCount
+    while harmonic < voice.harmonicCount
       sampleIndex++
 
       while sampleIndex < output.length
