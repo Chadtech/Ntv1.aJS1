@@ -129,19 +129,14 @@ module.exports =
       output.push input[sampleIndex]
       sampleIndex++
 
-    #console.log whereBegin, whereEnd, input.length
     reductionIndex = 0
     while sampleIndex < whereEnd
       reduction = (1 - (reductionIndex * rateOfReduction))
-      #console.log reduction
       fadedSample = input[sampleIndex] * reduction
-      #console.log Math.round(fadedSample)
       output.push Math.round(fadedSample)
       reductionIndex++
       sampleIndex++
 
-    console.log output
-    #console.log sampleIndex, input.length, output.length
     while sampleIndex < input.length
       output.push Math.round(input[sampleIndex] * finalVolume)
       sampleIndex++
@@ -170,8 +165,7 @@ module.exports =
       reductionIndex++
       sampleIndex++
 
-    remainderAfterFade = input.length - whereEnd - 1
-    while sampleIndex < remainderAfterFade
+    while sampleIndex < input.length
       output.push input[sampleIndex]
       sampleIndex++
 
@@ -195,7 +189,7 @@ module.exports =
 
     return @fadeIn(input, rampParameters)
 
-  ramp: (input, effect) ->
+  ramp: (input, effect) -> 
     return @rampIn(@rampOut(input, effect), effect)
 
   reverse: (input) ->
