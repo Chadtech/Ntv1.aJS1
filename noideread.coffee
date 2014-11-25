@@ -1,3 +1,5 @@
+Nt = require './Nt/noitech'
+
 module.exports = 
 
   noteToFrequency: (note, piece) ->
@@ -23,6 +25,17 @@ module.exports =
       for note in score[voice.name]
         if note['tone'] isnt undefined
           note['tone'] = @noteToFrequency(note['tone'], piece)
-          console.log voice.generate(note)
-          #if voice.generate(note)[0] is NaN
-          #  console.log note, voice.name
+
+    for voice in voices
+      noteIndex = 0
+      while noteIndex < score[voice.name].length
+        if score[voice.name][noteIndex]['tone'] isnt undefined
+          #console.log score[voice.name][noteIndex]
+          thisSound = voice.generate score[voice.name][noteIndex]
+          #console.log time[noteIndex]
+          performance = Nt.mix thisSound, performance, time[noteIndex]
+        noteIndex++
+
+    return performance
+
+

@@ -3,4 +3,4 @@ scale,1.0000,1.1250,1.2500,1.3333,1.5000,1.6667,1.8750
 tonic,25,,,,,,
 length,15,,,,,,
 dimensions,tone,amplitude,length,,,,
-voices,voice0,voice1,,,,,
+voices,voice0,,,,,,

@@ -60,7 +60,6 @@ module.exports =
 
   delay: (input, effect) ->
     output = []
-    console.log '9', input.length
     sampleIndex = 0
     finalLength = input.length
     finalLength += (effect.numberOf * effect.distance)
@@ -68,7 +67,6 @@ module.exports =
       output.push 0
       sampleIndex++
 
-    console.log 'A', output.length
     sampleIndex = 0
     while sampleIndex < input.length
       delayIndex = 0
@@ -120,7 +118,7 @@ module.exports =
   fadeOut: (input, effect) ->
     effect = effect or {}
     whereBegin = effect.beginAt or 0
-    whereEnd = effect.endAt or (input.length - 1)
+    whereEnd = effect.endAt or (input.length)
     finalVolume = effect.volumeAtEnd or 0
     rateOfReduction = (1 - finalVolume) / (whereEnd - whereBegin)
 
@@ -131,14 +129,20 @@ module.exports =
       output.push input[sampleIndex]
       sampleIndex++
 
-    durationOfFade = whereEnd - whereBegin
-    while sampleIndex < durationOfFade
-      fadedSample = input[sampleIndex] * (1 - (sampleIndex * rateOfReduction))
+    #console.log whereBegin, whereEnd, input.length
+    reductionIndex = 0
+    while sampleIndex < whereEnd
+      reduction = (1 - (reductionIndex * rateOfReduction))
+      #console.log reduction
+      fadedSample = input[sampleIndex] * reduction
+      #console.log Math.round(fadedSample)
       output.push Math.round(fadedSample)
+      reductionIndex++
       sampleIndex++
 
-    remainderAfterFade = input.length - whereEnd - 1
-    while sampleIndex < remainderAfterFade
+    console.log output
+    #console.log sampleIndex, input.length, output.length
+    while sampleIndex < input.length
       output.push Math.round(input[sampleIndex] * finalVolume)
       sampleIndex++
 
@@ -158,10 +162,12 @@ module.exports =
       output.push Math.round(input[sampleIndex] * startVolume)
       sampleIndex++
 
+    reductionIndex = 0
     durationOfFade = whereEnd - whereBegin
     while sampleIndex < durationOfFade
-      increase = ((durationOfFade - sampleIndex) * rateOfIncrease)
+      increase = ((durationOfFade - reductionIndex) * rateOfIncrease)
       output.push Math.round(input[sampleIndex] * (1 - increase))
+      reductionIndex++
       sampleIndex++
 
     remainderAfterFade = input.length - whereEnd - 1
