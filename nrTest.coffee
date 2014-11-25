@@ -43,7 +43,8 @@ voiceCalculators =
     name: 'voice1'
 
     defaultValues:
-      amplitude: 0.5
+      harmonicCount: 8
+      amplitude: 0.25
       length: 22050
       tone: 404
 
@@ -63,15 +64,6 @@ voiceCalculators =
 
 voices = voices.map (voice) ->
   voice = voiceCalculators[voice]
-
-
-
-#score['voice0'][0]['tone'] = Nr.noteToFrequency score['voice0'][0]['tone'], piece
-
-#voice0AtNote0 = voices['voice0'].generate(score['voice0'][0])
-#Nt.buildFile 'v0@n0.wav', [voice0AtNote0]
-
-#console.log Nr.sortPiece(piece, voices)
 
 Nt.buildFile 'FIRSTEST.wav', [Nr.sortPiece(piece, voices)]
 

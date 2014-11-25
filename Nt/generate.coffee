@@ -52,8 +52,10 @@ module.exports =
 
         sineArgument = sampleIndex * Math.PI * 2
         sineArgument *= harmonic * enharmonic
-        sineArgument *= (voice.tone / voice.sampleRate)
+        sineArgument *= (voice.tone / 44100)
+
         sample *= Math.sin(sineArgument)
+
 
         output[sampleIndex] += sample
         sampleIndex++
@@ -180,7 +182,7 @@ module.exports =
 
         sineArgument = sampleIndex * Math.PI * 2
         sineArgument *= ((harmonic * 2) - 1) * enharmonic
-        sineArgument *= (voice.tone / voice.sampleRate)
+        sineArgument *= (voice.tone / 44100)
 
         sample *= Math.sin(sineArgument)
 
