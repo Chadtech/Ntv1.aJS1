@@ -268,7 +268,6 @@ module.exports =
       output.push input1[sampleIndex]
       sampleIndex++
 
-    #console.log input1
     if (whereAt + input0.length) > input1.length
       padding = 0
       while padding < ((whereAt + input0.length) - input1.length)
