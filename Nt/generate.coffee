@@ -2,11 +2,11 @@ module.exports =
 
   sine: (voice) ->
     voice = voice or {}
-    amplitude = voice.amplitude * 32767 or 32767
+    amplitude = voice.amplitude or 1
     tone = voice.tone / 44100
     output = []
     sampleIndex = 0
-    while sampleIndex < voice.length
+    while sampleIndex < voice.sustain
       sample = amplitude
       sample *= Math.sin(Math.PI * 2 * sampleIndex * tone)
       output.push sample
@@ -15,18 +15,18 @@ module.exports =
 
   saw: (voice) ->
     voice = voice or {}
-    amplitude = voice.amplitude * 32767 or 32767
+    amplitude = voice.amplitude or 1
 
     output = []
     sampleIndex = 0
-    while sampleIndex < voice.length
+    while sampleIndex < voice.sustain
       output.push 0
       sampleIndex++
 
     harmonic = 1
     while harmonic <= voice.harmonicCount
       sampleIndex = 0
-      while sampleIndex < voice.length
+      while sampleIndex < voice.sustain
 
         enharmonic = 1
         if voice.enharmonicity isnt undefined
@@ -76,15 +76,15 @@ module.exports =
       output[sampleIndex] *= (1 - harmonicVolumeAdjust)
       sampleIndex++
 
-    return output
+    output
 
   triangle: (voice) ->
     voice = voice or {}
-    amplitude = voice.amplitude * 32767 or 32767
+    amplitude = voice.amplitude or 1
 
     output = []
     sampleIndex = 0
-    while sampleIndex < voice.length
+    while sampleIndex < voice.sustain
       output.push 0
       sampleIndex++
 
@@ -145,18 +145,18 @@ module.exports =
 
   square: (voice) ->
     voice = voice or {}
-    amplitude = voice.amplitude * 32767 or 32767
+    amplitude = voice.amplitude or 1
 
     output = []
     sampleIndex = 0
-    while sampleIndex < voice.length
+    while sampleIndex < voice.sustain
       output.push 0
       sampleIndex++   
       
     harmonic = 1
     while harmonic <= voice.harmonicCount
       sampleIndex = 0
-      while sampleIndex < voice.length
+      while sampleIndex < voice.sustain
 
         enharmonic = 1
         if voice.enharmonicity isnt undefined
@@ -212,7 +212,7 @@ module.exports =
     output = []
     sampleIndex = 0
 
-    while sampleIndex < voice.length
+    while sampleIndex < voice.sustain
       output.push 0
       sampleIndex++
 

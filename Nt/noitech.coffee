@@ -6,6 +6,22 @@ module.exports =
   generate: generate
   effect: effect
 
+  convertTo64Bit: (input) ->
+    sampleIndex = 0
+    while sampleIndex < input.length
+      input[sampleIndex] = (input[sampleIndex] * 32767) // 1
+      sampleIndex++
+      
+    input
+
+  convertToFloat: (input) ->
+    sampleIndex = 0
+    while sampleIndex < input.length
+      input[sampleIndex] = input[sampleIndex] / 32767
+      sampleIndex++
+      
+    input
+
   buildFile: (fileName, channels) ->
     manipulatedChannels = channels
     sameLength = true
@@ -94,7 +110,7 @@ module.exports =
           valueToAdd = channels[channelIndex][sampleIndex] + 65536
         else
           valueToAdd = channels[channelIndex][sampleIndex]
-        channelAudio.push (valueToAdd) % 256
+        channelAudio.push (valueToAdd % 256)
         channelAudio.push (valueToAdd // 256)
         channelIndex++
       sampleIndex++
@@ -215,15 +231,16 @@ module.exports =
 
     filesData = header.concat(channelAudio)
     outputFile = new Buffer(filesData)
-    fs.writeFile fileName, outputFile
+    fs.writeFileSync fileName, outputFile
 
   open: (fileName) ->
+
     data = []
-    rawFile = fs.readFileSync(fileName)
+    rawFile = fs.readFileSync fileName 
 
     datumIndex = 0
     while datumIndex < rawFile.length
-      data.push rawFile.readUInt8(datumIndex)
+      data.push rawFile.readUInt8 datumIndex 
       datumIndex++
 
     numberOfChannels = data[22]
@@ -250,36 +267,23 @@ module.exports =
       channels.push []
       sampleIndex = 0
       while sampleIndex < (unsortedAudioData.length / numberOfChannels)
-        sample = sampleIndex * numberOfChannels
-        sample += channelIndex
-        sample = unsortedAudioData[sample]
-        channels[channels.length - 1].push sample
+        sample = unsortedAudioData[ (sampleIndex * numberOfChannels) + channelIndex ]
+        channels[ channels.length - 1].push sample
         sampleIndex++
       channelIndex++
 
-    return channels
+    # console.log channels
+    channels
 
   mix: (input0, input1, place) ->
-    output = []
     whereAt = place or 0
 
     sampleIndex = 0
-    while sampleIndex < input1.length
-      output.push input1[sampleIndex]
-      sampleIndex++
-
-    if (whereAt + input0.length) > input1.length
-      padding = 0
-      while padding < ((whereAt + input0.length) - input1.length)
-        output.push 0
-        padding++
-
-    sampleIndex = 0
     while sampleIndex < input0.length
-      output[whereAt + sampleIndex] += input0[sampleIndex]
+      input1[whereAt + sampleIndex] += input0[sampleIndex]
       sampleIndex++
 
-    return output
+    input1
 
   join: (input0, input1) ->
     output = []

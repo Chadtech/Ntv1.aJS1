@@ -1,3 +1,7 @@
+#_ = require 'lodash'
+
+# speed of sound in meters per sample is 0.0078 meters per sample
+
 module.exports =
   # invert the amplitude at each sample
   # IE
@@ -15,7 +19,6 @@ module.exports =
 
   shift: (input, effect) ->
     output = []
-
     if (effect.shift is 0) or (effect.shift is undefined)
       return input
 
@@ -28,11 +31,42 @@ module.exports =
     sampleIndex = 0
     while sampleIndex < input.length
       sample = input[sampleIndex] * (1 - shiftMagnitude) 
-      sample += input[sampleIndex] * shiftMag
+      sample += input[sampleIndex + 1] * shiftMagnitude
       output.push sample
       sampleIndex++
 
-    return output
+    output
+
+  giveSpatiality: (input, effect) ->
+    output = []
+    speedOfSound = 0.0078
+    xpos = effect.xpos or 1
+    ypos = effect.ypos or 1
+    leftEar = xpos - 0.05
+    rightEar = xpos + 0.05
+
+    leftEarDist = leftEar ** 2
+    leftEarDist += ypos ** 2
+    leftEarDist = leftEarDist ** 0.5
+
+    rightEarDist = rightEar ** 2
+    rightEarDist += ypos ** 2
+    rightEarDist = rightEarDist ** 0.5
+
+    leftEarDelay = leftEarDist * speedOfSound
+    rightEarDelay = rightEarDist * speedOfSound
+
+    leftEarContent = @padBefore input, 
+      paddingAmount: leftEarDelay // 1
+    leftEarContent = @shift input,
+      shift: leftEarDelay % 1
+
+    rightEarContent = @padBefore input,
+      paddingamount: rightEarDelay // 1
+    rightEarContent = @shift input,
+      shift: rightEarDelay % 1
+
+    [leftEarContent, rightEarContent]
 
   padBefore: (input, effect) ->
     paddingAmount = effect.paddingAmount or 30
@@ -91,8 +125,14 @@ module.exports =
 
     return output
 
+  ###
+  bitCrush2: (buffer, effect) ->
+    _.map buffer, (sample) ->
+      ( input[sampleIndex] // effect.factor) * effect.factor
+  ###
+
   clip: (input, effect) ->
-    threshold = 32767 * effect.threshold or 32767
+    threshold = effect.threshold or 1
     threshold = threshold // 1
     output = []
 
@@ -109,11 +149,9 @@ module.exports =
 
   vol: (input, effect) ->
     output = []
-
     for sample in input
       output.push sample * effect.factor
-
-    return output
+    output
 
   fadeOut: (input, effect) ->
     effect = effect or {}
@@ -133,15 +171,15 @@ module.exports =
     while sampleIndex < whereEnd
       reduction = (1 - (reductionIndex * rateOfReduction))
       fadedSample = input[sampleIndex] * reduction
-      output.push Math.round(fadedSample)
+      output.push fadedSample
       reductionIndex++
       sampleIndex++
 
     while sampleIndex < input.length
-      output.push Math.round(input[sampleIndex] * finalVolume)
+      output.push input[sampleIndex] * finalVolume
       sampleIndex++
 
-    return output
+    output
 
   fadeIn: (input, effect) ->
     effect = effect or {}
@@ -154,14 +192,14 @@ module.exports =
 
     sampleIndex = 0
     while sampleIndex < whereBegin
-      output.push Math.round(input[sampleIndex] * startVolume)
+      output.push input[sampleIndex] * startVolume
       sampleIndex++
 
     reductionIndex = 0
     durationOfFade = whereEnd - whereBegin
     while sampleIndex < durationOfFade
       increase = ((durationOfFade - reductionIndex) * rateOfIncrease)
-      output.push Math.round(input[sampleIndex] * (1 - increase))
+      output.push input[sampleIndex] * (1 - increase)
       reductionIndex++
       sampleIndex++
 
@@ -324,7 +362,7 @@ module.exports =
       convolveIndex = 0
       while convolveIndex < seed.length
         sample = input[sampleIndex] * seed[convolveIndex]
-        sample /= 32767
+        #sample /= 32767
         sample *= factor 
         output[sampleIndex + convolveIndex] += sample
         convolveIndex++
@@ -530,9 +568,7 @@ module.exports =
         output[sampleIndex] += rendition[sampleIndex] / iterations
         sampleIndex++
 
-    return output
-
-
+    output
 
   glissando: (input, effect) ->
     output = []
